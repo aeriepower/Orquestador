@@ -1,12 +1,6 @@
 // Motor Autónomo de Iniciativas & Auto-Evolución
-// Gestiona el ciclo de vida de iniciativas entre Verónica D1 y el tablero de Asana.
-
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Consulta activamente el grafo de Verónica D1 (nodos, relaciones, memorias, patrones de rechazo)
+// y gestiona el ciclo de vida de prototipos en ramas Git aisladas y en Asana.
 
 const ASANA_TOKEN = '2/9318767707442/1218819902154567:d933bd0d24bab0903b8a75d8de7b6357';
 const ASANA_PROJECT = '1219144624749842'; // 🤖 Autonomía & Iniciativas (Antigravity & Jarvis)
@@ -75,35 +69,55 @@ export class MotorIniciativas {
     }
   }
 
-  async listarIniciativasD1() {
+  async consultarGrafoVeronica() {
     try {
-      const res = await fetch(`${NUCLEO_URL}/iniciativas`, {
-        headers: { authorization: `Bearer ${NUCLEO_TOKEN}` }
-      });
-      return await res.json();
+      const [nodosRes, relsRes, rechazosRes, iniciativasRes] = await Promise.all([
+        fetch(`${NUCLEO_URL}/nodos`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } }),
+        fetch(`${NUCLEO_URL}/relaciones`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } }),
+        fetch(`${NUCLEO_URL}/iniciativas/rechazos/todos`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } }),
+        fetch(`${NUCLEO_URL}/iniciativas`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } })
+      ]);
+
+      return {
+        nodos: (await nodosRes.json()) || [],
+        relaciones: (await relsRes.json()) || [],
+        rechazos: (await rechazosRes.json()) || [],
+        iniciativas: (await iniciativasRes.json()) || []
+      };
     } catch (e) {
-      console.error(`[MotorIniciativas] Error listando iniciativas D1:`, e.message);
-      return [];
+      console.error('[MotorIniciativas] Error consultando grafo Verónica:', e.message);
+      return { nodos: [], relaciones: [], rechazos: [], iniciativas: [] };
     }
   }
 
   async ejecutarCicloEvaluacion(origen = 'cron_programado') {
     this.ultimaEjecucion = new Date().toISOString();
     this.totalCiclos++;
+
     console.log(`\n======================================================`);
-    console.log(`🔄 [CICLO DE INICIATIVAS Y AUTO-EVOLUCIÓN] #${this.totalCiclos}`);
+    console.log(`🔄 [CICLO DE INICIATIVAS BASADO EN GRAFO D1] #${this.totalCiclos}`);
     console.log(`Origen: ${origen} | Timestamp: ${this.ultimaEjecucion}`);
     console.log(`======================================================\n`);
 
-    const iniciativas = await this.listarIniciativasD1();
-    console.log(`[MotorIniciativas] ${iniciativas.length} iniciativas registradas en D1.`);
+    const { nodos, relaciones, rechazos, iniciativas } = await this.consultarGrafoVeronica();
+
+    console.log(`[MotorIniciativas] Estado del núcleo D1:`);
+    console.log(` - Nodos activos: ${nodos.length}`);
+    console.log(` - Relaciones de dependencia: ${relaciones.length}`);
+    console.log(` - Patrones de rechazo guardados: ${rechazos.length}`);
+    console.log(` - Iniciativas registradas: ${iniciativas.length}`);
 
     return {
       ok: true,
       ciclo: this.totalCiclos,
       origen,
       timestamp: this.ultimaEjecucion,
-      total_iniciativas: iniciativas.length
+      metricas_grafo: {
+        total_nodos: nodos.length,
+        total_relaciones: relaciones.length,
+        total_rechazos: rechazos.length,
+        total_iniciativas: iniciativas.length
+      }
     };
   }
 }

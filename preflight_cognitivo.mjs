@@ -1,47 +1,51 @@
-// Pre-flight Check Cognitivo & Introspección de Antigravity
-// Módulo de autocrítica y alineación previa para evitar malentendidos,
-// sesgos rutinarios de bug-fixing y desperdicio de tokens.
+// Pre-flight Check Cognitivo de Antigravity
+// Módulo de autocrítica que consulta directamente a Verónica D1 (patrones de rechazo y reglas de arquitectura)
+// Evita sesgos de mantenimiento rutinario, silos locales y violaciones de la Regla Cero.
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const MEMORIA_PATH = path.join(__dirname, 'memoria_autoevolucion.json');
+const NUCLEO_URL = process.env.NUCLEO_REMOTO_URL || 'https://jarvis-nucleo.hurtado-banda-david.workers.dev';
+const NUCLEO_TOKEN = process.env.NUCLEO_REMOTO_TOKEN || 'p93ZRdpNyqgGNq1RjdBpAdWWtBNzcpKAiG8IG9DBW0E';
 
 export class PreflightCognitivo {
   constructor() {
-    this.cargarMemoria();
+    this.cacheRechazos = null;
+    this.cacheTimestamp = 0;
+    this.CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché
   }
 
-  cargarMemoria() {
+  async obtenerPatronesRechazo() {
+    const ahora = Date.now();
+    if (this.cacheRechazos && (ahora - this.cacheTimestamp < this.CACHE_TTL_MS)) {
+      return this.cacheRechazos;
+    }
+
     try {
-      if (fs.existsSync(MEMORIA_PATH)) {
-        this.memoria = JSON.parse(fs.readFileSync(MEMORIA_PATH, 'utf8'));
-      } else {
-        this.memoria = { principios_rectores_david: [], lecciones_de_friccion: [] };
+      const res = await fetch(`${NUCLEO_URL}/iniciativas/rechazos/todos`, {
+        headers: { authorization: `Bearer ${NUCLEO_TOKEN}` }
+      });
+      if (res.ok) {
+        this.cacheRechazos = await res.json();
+        this.cacheTimestamp = ahora;
+        return this.cacheRechazos;
       }
     } catch (e) {
-      console.error('[PreflightCognitivo] Error al cargar memoria:', e.message);
-      this.memoria = { principios_rectores_david: [], lecciones_de_friccion: [] };
+      console.warn('[PreflightCognitivo] No se pudo consultar patrones de rechazo en D1:', e.message);
     }
+    return this.cacheRechazos || [];
   }
 
   /**
-   * Evalúa la intención y enfoque de una tarea antes de actuar.
+   * Evalúa la intención antes de actuar.
    * @param {string} promptUsuario - Lo que David ha pedido o lo que se va a hacer.
    * @param {object} contexto - Datos adicionales (ej. { accionPlaneada, riesgo, esPrototipo })
-   * @returns {object} Evaluación cognitiva estructurada
+   * @returns {Promise<object>} Evaluación cognitiva estructurada
    */
-  evaluar(promptUsuario, contexto = {}) {
+  async evaluar(promptUsuario, contexto = {}) {
     const texto = `${promptUsuario} ${contexto.accionPlaneada || ''}`.toLowerCase();
     const advertencias = [];
     const consejos = [];
-    let riesgoMalentendido = 'BAJO';
+    const patronesD1 = await this.obtenerPatronesRechazo();
 
-    // 1. Detección de Sesgo Bug-Fixer vs Curiosidad/Iniciativa (LF-01 / PR-01)
+    // 1. Detección de Sesgo Bug-Fixer vs Curiosidad/Iniciativa (Principio de Autonomía)
     const palabrasBugFix = ['bug', 'error', 'fix', 'parche', 'fallo', 'corregir', 'reparar'];
     const tieneBugFix = palabrasBugFix.some(p => texto.includes(p));
     const palabrasAutonomia = ['iniciativa', 'apetezca', 'quieras', 'inventar', 'mejorarte', 'brainstorm', 'explorar', 'autonomia'];
@@ -50,46 +54,50 @@ export class PreflightCognitivo {
     if (tieneAutonomia && tieneBugFix) {
       advertencias.push({
         codigo: 'ALERTA_SESGO_BUGFIX',
-        mensaje: 'Cuidado: David habla de autonomía/iniciativa, no saltes automáticamente a reparar bugs ni tareas de mantenimiento (para eso está Sentinel).'
+        mensaje: 'David habla de autonomía/iniciativa: no saltes a reparar bugs ni tareas de mantenimiento (para eso está Sentinel).'
       });
-      riesgoMalentendido = 'ALTO';
     }
 
-    // 2. Detección de Falso Consentimiento / Preguntas Innecesarias en L1 (PR-04)
+    // 2. Comprobación contra Patrones de Rechazo vivos en Verónica D1
+    for (const p of patronesD1) {
+      let senales = [];
+      try {
+        senales = typeof p.senales_json === 'string' ? JSON.parse(p.senales_json) : (p.senales_json || []);
+      } catch (_) {}
+
+      const coincide = senales.some(s => texto.includes(s.toLowerCase()));
+      if (coincide) {
+        advertencias.push({
+          codigo: `RECHAZO_HISTORICO_${p.categoria.toUpperCase()}`,
+          mensaje: `Alerta por patrón rechazado en D1: ${p.resumen_rechazo}`
+        });
+      }
+    }
+
+    // 3. Chequeo de Falso Consentimiento en L1 (Autonomía para Prototipos)
     if (contexto.accionPlaneada && contexto.accionPlaneada.toLowerCase().includes('preguntar')) {
       if (contexto.esPrototipo || contexto.riesgo === 'L1') {
         advertencias.push({
           codigo: 'ALERTA_PREGUNTA_REDUNDANTE_L1',
-          mensaje: 'En tareas de nivel L1 (prototipos, ramas aisladas, herramientas internas), David prefiere autonomía hasta el 90%. Prototipa primero, enseña funcionando.'
+          mensaje: 'En tareas L1 (prototipos en ramas aisladas, herramientas internas), David prefiere autonomía al 90%. Prototipa primero, enseña funcionando.'
         });
       }
     }
 
-    // 3. Chequeo de Tokens y Densidad de Razonamiento (PR-03 / LF-02)
-    const esLargoOComplejo = promptUsuario.length > 250 || texto.includes('arquitectura') || texto.includes('sistema');
-    if (esLargoOComplejo) {
-      consejos.push({
-        principio: 'PR-03 Economía Racional de Tokens',
-        pauta: 'No responder con prisas ni suposiciones incompletas. Aplicar razonamiento denso a fuego lento para resolver en 1 turno certero y evitar rehacer.'
+    // 4. Disciplina Git: Comprobación de Ramas para Prototipos
+    if (contexto.esPrototipo && (!contexto.ramaGit || contexto.ramaGit === 'main' || contexto.ramaGit === 'master')) {
+      advertencias.push({
+        codigo: 'ALERTA_GIT_RAMA_OBLIGATORIA',
+        mensaje: 'Los prototipos y experimentos deben vivir en ramas feature aisladas (feat/...), nunca directamente en main ni master para no dejar código legacy.'
       });
     }
 
-    // 4. Chequeo de Regla Cero (PR-05)
-    if (contexto.produceConocimientoDuradero) {
-      consejos.push({
-        principio: 'PR-05 Regla Cero',
-        pauta: 'Registrar de inmediato cualquier decisión o hallazgo duradero en Verónica D1 o en candyla/docs_compartidos/.'
+    // 5. Chequeo de Regla Cero (§0 AGENTS.md)
+    if (texto.includes('fichero local') || texto.includes('archivo json') || texto.includes('disco local')) {
+      advertencias.push({
+        codigo: 'ALERTA_REGLA_CERO',
+        mensaje: 'Cero información privilegiada: toda verdad persistente debe residir en Verónica D1 para que Jarvis y Claude puedan consumirla.'
       });
-    }
-
-    // 5. Contraste con lecciones de fricción históricas
-    for (const leccion of this.memoria.lecciones_de_friccion || []) {
-      if (texto.includes('tarifa plana') || texto.includes('ilimitada')) {
-        advertencias.push({
-          codigo: leccion.id,
-          mensaje: `Recordatorio histórico: ${leccion.correccion_aplicada}`
-        });
-      }
     }
 
     return {
@@ -103,11 +111,12 @@ export class PreflightCognitivo {
   }
 }
 
-// Ejecución CLI si se invoca directamente
+// Ejecución CLI directa
 if (process.argv[1] && process.argv[1].endsWith('preflight_cognitivo.mjs')) {
-  const promptEntrada = process.argv.slice(2).join(' ') || 'Vale si dejalo programador, pero me gustaria que te centrases en ti, en mejorarte ¿vale?';
+  const promptEntrada = process.argv.slice(2).join(' ') || 'Quiero guardar esta memoria en un fichero json local en el disco';
   const preflight = new PreflightCognitivo();
-  const resultado = preflight.evaluar(promptEntrada, { esPrototipo: true, riesgo: 'L1' });
-  console.log('\n=== RESULTADO DEL PRE-FLIGHT COGNITIVO ANTIGRAVITY ===\n');
-  console.log(JSON.stringify(resultado, null, 2));
+  preflight.evaluar(promptEntrada, { esPrototipo: true, ramaGit: 'main' }).then(res => {
+    console.log('\n=== RESULTADO DEL PRE-FLIGHT COGNITIVO ANTIGRAVITY (CONEXIÓN D1) ===\n');
+    console.log(JSON.stringify(res, null, 2));
+  });
 }
