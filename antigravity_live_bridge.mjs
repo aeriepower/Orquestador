@@ -1,16 +1,17 @@
-// Antigravity Live Bridge: Receptor en tiempo real con inyección activa en el chat vía CDP
-// 1. Recibe por Webhook local (3888) o sondeo en Verónica D1
-// 2. Inyecta el encargo directamente en el editor del chat de Antigravity vía Chrome DevTools Protocol
-// 3. Pulsa Enter para que el chat se active y empiece a generar en pantalla en tiempo real
+// Antigravity Live Bridge & Scheduler de Auto-Evolución
+// 1. Recibe tareas por Webhook local (3888) en tiempo real vía CDP
+// 2. Ejecuta el ciclo periódico de iniciativas y auto-mejora (cada 6 horas) sin agotar cuotas
+// 3. Expone API local para forzar ciclos y consultar estado
 
 import http from 'http';
 import { injectPrompt } from './cdp_injector.mjs';
+import { MotorIniciativas } from './motor_iniciativas.mjs';
 
 const PUERTO = process.env.BRIDGE_PORT || 3888;
-const NUCLEO_URL = process.env.NUCLEO_REMOTO_URL || 'https://jarvis-nucleo.hurtado-banda-david.workers.dev';
-const NUCLEO_TOKEN = process.env.NUCLEO_REMOTO_TOKEN || 'p93ZRdpNyqgGNq1RjdBpAdWWtBNzcpKAiG8IG9DBW0E';
+const INTERVALO_MS = 6 * 60 * 60 * 1000; // 6 horas
 
 const tareasProcesadas = new Set();
+const motor = new MotorIniciativas();
 
 async function despacharAlChat(idTarea, titulo, detalles, origen) {
   if (tareasProcesadas.has(idTarea)) return;
@@ -41,8 +42,8 @@ async function despacharAlChat(idTarea, titulo, detalles, origen) {
   }
 }
 
-// Servidor HTTP local (Webhook para Jarvis en la misma red)
-const server = http.createServer((req, res) => {
+// Servidor HTTP local
+const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -55,7 +56,35 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, servicio: 'Antigravity Live Bridge', uptime: process.uptime() }));
+    res.end(JSON.stringify({
+      ok: true,
+      servicio: 'Antigravity Live Bridge & Auto-Evolucion Scheduler',
+      uptime: process.uptime(),
+      scheduler: {
+        intervalo_horas: 6,
+        total_ciclos: motor.totalCiclos,
+        ultima_ejecucion: motor.ultimaEjecucion,
+        siguiente_ejecucion: motor.siguienteEjecucion
+      }
+    }));
+    return;
+  }
+
+  if (req.method === 'GET' && req.url === '/iniciativas/estado') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      total_ciclos: motor.totalCiclos,
+      ultima_ejecucion: motor.ultimaEjecucion,
+      siguiente_ejecucion: motor.siguienteEjecucion,
+      scheduler_activo: true
+    }));
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/ciclo-iniciativas') {
+    const resultado = await motor.ejecutarCicloEvaluacion('api_manual');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, resultado }));
     return;
   }
 
@@ -85,6 +114,33 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: 'Ruta no encontrada' }));
 });
 
+// Planificador periódico en segundo plano
+function iniciarScheduler() {
+  motor.siguienteEjecucion = new Date(Date.now() + 15000).toISOString();
+
+  // Primer ciclo tras inicio breve (15s)
+  setTimeout(async () => {
+    try {
+      await motor.ejecutarCicloEvaluacion('inicio_demonio');
+    } catch (e) {
+      console.error('[Scheduler] Error en ciclo inicial:', e.message);
+    }
+  }, 15000);
+
+  // Intervalo continuo cada 6 horas
+  setInterval(async () => {
+    try {
+      motor.siguienteEjecucion = new Date(Date.now() + INTERVALO_MS).toISOString();
+      await motor.ejecutarCicloEvaluacion('intervalo_programado');
+    } catch (e) {
+      console.error('[Scheduler] Error en ciclo periódico:', e.message);
+    }
+  }, INTERVALO_MS);
+
+  console.log(`[Scheduler] Programado cada 6 horas. Próximo ciclo en 15s.`);
+}
+
 server.listen(PUERTO, '0.0.0.0', () => {
-  console.log(`[Live Bridge] Escuchando en http://0.0.0.0:${PUERTO}/a2a (Cero sondeo a Cloudflare, 100% PUSH local)`);
+  console.log(`[Live Bridge] Escuchando en http://0.0.0.0:${PUERTO}/a2a`);
+  iniciarScheduler();
 });
