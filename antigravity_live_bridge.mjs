@@ -8,7 +8,7 @@ import { injectPrompt } from './cdp_injector.mjs';
 import { MotorIniciativas } from './motor_iniciativas.mjs';
 
 const PUERTO = process.env.BRIDGE_PORT || 3888;
-const INTERVALO_MS = 6 * 60 * 60 * 1000; // 6 horas
+const INTERVALO_MS = 2 * 60 * 60 * 1000; // 2 horas
 
 const tareasProcesadas = new Set();
 const motor = new MotorIniciativas();
@@ -61,7 +61,7 @@ const server = http.createServer(async (req, res) => {
       servicio: 'Antigravity Live Bridge & Auto-Evolucion Scheduler',
       uptime: process.uptime(),
       scheduler: {
-        intervalo_horas: 6,
+        intervalo_horas: 2,
         total_ciclos: motor.totalCiclos,
         ultima_ejecucion: motor.ultimaEjecucion,
         siguiente_ejecucion: motor.siguienteEjecucion
@@ -127,7 +127,7 @@ function iniciarScheduler() {
     }
   }, 15000);
 
-  // Intervalo continuo cada 6 horas
+  // Intervalo continuo cada 2 horas
   setInterval(async () => {
     try {
       motor.siguienteEjecucion = new Date(Date.now() + INTERVALO_MS).toISOString();
@@ -137,7 +137,7 @@ function iniciarScheduler() {
     }
   }, INTERVALO_MS);
 
-  console.log(`[Scheduler] Programado cada 6 horas. Próximo ciclo en 15s.`);
+  console.log(`[Scheduler] Programado cada 2 horas. Próximo ciclo en 15s.`);
 }
 
 server.listen(PUERTO, '0.0.0.0', () => {

@@ -1,6 +1,7 @@
-// Motor Autónomo de Iniciativas & Auto-Evolución
-// Consulta activamente el grafo de Verónica D1 (nodos, relaciones, memorias, patrones de rechazo)
-// y gestiona el ciclo de vida de prototipos en ramas Git aisladas y en Asana.
+// Motor Autónomo de Ideas & Herramientas
+// 1. Cada 2 horas selecciona y publica 3 ideas en Asana ('💡 Chispas & Nuevas Ideas')
+// 2. Extrae y rota ideas desde el Laboratorio de Herramientas (modelos locales, hardware ESP32/PC, marketing, audio, MCP)
+// 3. Registra en D1 con estado 'chispa' y puntuación de impacto/esfuerzo sin autoimplementación
 
 const ASANA_TOKEN = '2/9318767707442/1218819902154567:d933bd0d24bab0903b8a75d8de7b6357';
 const ASANA_PROJECT = '1219144624749842'; // 🤖 Autonomía & Iniciativas (Antigravity & Jarvis)
@@ -15,6 +16,82 @@ export const ASANA_SECCIONES = {
 const NUCLEO_URL = process.env.NUCLEO_REMOTO_URL || 'https://jarvis-nucleo.hurtado-banda-david.workers.dev';
 const NUCLEO_TOKEN = process.env.NUCLEO_REMOTO_TOKEN || 'p93ZRdpNyqgGNq1RjdBpAdWWtBNzcpKAiG8IG9DBW0E';
 
+// Banco temático extraído de la conversación "Ideas de herramientas" (Laboratorio de I+D para nuevo PC & hardware)
+export const BANCO_IDEAS_HERRAMIENTAS = [
+  {
+    titulo: '🎙️ [Hardware & Voz] Pocket TTS + Muse ESP32 para interacción offline con Jarvis',
+    ambito: 'jarvis',
+    motivacion: 'Probar síntesis de voz ultra-ligera en local (Pocket TTS) comunicada con placas ESP32 corriendo firmware Muse para tener un altavoz/micrófono de baja latencia sin depender de nubes externas.',
+    hipotesis: 'Latencia de respuesta por voz inferior a 250ms directamente en la LAN, con coste de hardware <15€ por habitación.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 4.5, alineacion: 5, urgencia: 3, confianza: 4, riesgo: 1, esfuerzo: 2.5, total: 6.8 },
+    creado_por: 'antigravity_scheduler'
+  },
+  {
+    titulo: '⚡ [Modelos Locales] Banco de Pruebas Kimi-k3-in-c (8GB RAM) vs Qwen 2.5 Coder',
+    ambito: 'antigravity',
+    motivacion: 'Evaluar motores de inferencia hiper-optimizados en C/C++ (como Kimi-k3-in-c o llama.cpp) capaces de correr modelos de 3B-7B parámetros consumiendo menos de 8GB de RAM en CPU pura para tareas offline.',
+    hipotesis: 'Tener un motor de razonamiento de respaldo funcional en el PC incluso cuando no haya conexión o queramos procesar datos confidenciales a coste cero.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 4, alineacion: 4.5, urgencia: 3, confianza: 4.5, riesgo: 1, esfuerzo: 2, total: 6.2 },
+    creado_por: 'antigravity_scheduler'
+  },
+  {
+    titulo: '🦉 [Agentes Autónomos] Integración Hermes 3 / Nous Research con OpenCoder',
+    ambito: 'jarvis',
+    motivacion: 'Los modelos Hermes de Nous Research están específicamente entrenados para seguir instrucciones multi-step y llamadas a herramientas (function calling) estructuradas mejor que los LLMs conversacionales genéricos.',
+    hipotesis: 'Reducir fallos de parseo en herramientas locales y dotar al agente de mejor capacidad de planificación agéntica local.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 4.5, alineacion: 4.5, urgencia: 3.5, confianza: 4, riesgo: 1, esfuerzo: 2, total: 6.5 },
+    creado_por: 'antigravity_scheduler'
+  },
+  {
+    titulo: '📱 [Control Dispositivos] Servidor Mobile-MCP (mobile-next) para control telefónico',
+    ambito: 'jarvis',
+    motivacion: 'Desplegar un conector MCP móvil usando la especificación mobile-next/mobile-mcp para que los agentes puedan consultar notificaciones, estado de batería o disparar acciones en el móvil de David.',
+    hipotesis: 'Unificar la interacción móvil con el ecosistema de Jarvis y Claude a través del protocolo estándar MCP.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 4, alineacion: 4.5, urgencia: 3, confianza: 3.5, riesgo: 1, esfuerzo: 2.5, total: 5.8 },
+    creado_por: 'antigravity_scheduler'
+  },
+  {
+    titulo: '🍬 [Candyla Growth] Generación de Creatividades de Producto vía Google Pomelli',
+    ambito: 'candyla',
+    motivacion: 'Explorar las capacidades de Google Pomelli (Google Labs / DeepMind) para generar automáticamente kits de marketing, copys visuales y creatividades de catálogo adaptadas al tono de Candyla.',
+    hipotesis: 'Acelerar la creación de campañas y fichas de producto atractivas sin requerir horas de diseño manual para cada dulce nuevo.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 4.5, alineacion: 5, urgencia: 3.5, confianza: 4, riesgo: 1, esfuerzo: 1.5, total: 6.9 },
+    creado_por: 'antigravity_scheduler'
+  },
+  {
+    titulo: '🛡️ [Seguridad & Auditoría] NVIDIA Nemotron Ultra para validación y Red-Teaming',
+    ambito: 'antigravity',
+    motivacion: 'Aprovechar la arquitectura de NVIDIA Nemotron Ultra para realizar auditorías automáticas de prompts, detección de vulnerabilidades y comprobación cruzada de seguridad en nuestras integraciones.',
+    hipotesis: 'Proteger los endpoints públicos y agentes de WhatsApp/n8n contra inyecciones de prompt o fugas de datos.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 4, alineacion: 4, urgencia: 2.5, confianza: 4, riesgo: 1, esfuerzo: 2, total: 5.7 },
+    creado_por: 'antigravity_scheduler'
+  },
+  {
+    titulo: '🗣️ [Voz Hiper-Realista] Pipeline Híbrido ElevenLabs para respuestas clave de Jarvis',
+    ambito: 'jarvis',
+    motivacion: 'Diferenciar entre voz rápida local (offline/gratis) para confirmaciones cortas y ElevenLabs para resúmenes ejecutivos matutinos o lecturas detalladas de informes con inflexión humana realista.',
+    hipotesis: 'Mejorar drásticamente la experiencia de usuario y presencia de Jarvis sin disparar el consumo de créditos de audio.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 4, alineacion: 4.5, urgencia: 3, confianza: 4.5, riesgo: 1, esfuerzo: 1.5, total: 6.3 },
+    creado_por: 'antigravity_scheduler'
+  },
+  {
+    titulo: '🧩 [Micro-Apps] Prototipado Rápido de Flujos Asistidos con Google Opal',
+    ambito: 'antigravity',
+    motivacion: 'Analizar cómo encaja Google Opal como plataforma no-code experimental para ensamblar herramientas operativas internas de forma visual antes de pasarlas a código duro en Cloudflare o Node.',
+    hipotesis: 'Reducir el ciclo de validación de herramientas internas a minutos para flujos de prueba con David.',
+    risk_tier: 'L1',
+    scores_json: { impacto: 3.5, alineacion: 4, urgencia: 2, confianza: 4, riesgo: 1, esfuerzo: 1.5, total: 5.2 },
+    creado_por: 'antigravity_scheduler'
+  }
+];
+
 export class MotorIniciativas {
   constructor() {
     this.ultimaEjecucion = null;
@@ -22,71 +99,67 @@ export class MotorIniciativas {
     this.totalCiclos = 0;
   }
 
-  async moverTareaAsana(taskGid, sectionGid, comentario = null) {
+  async listarIniciativasD1() {
     try {
-      const res = await fetch(`https://app.asana.com/api/1.0/sections/${sectionGid}/addTask`, {
+      const res = await fetch(`${NUCLEO_URL}/iniciativas`, {
+        headers: { authorization: `Bearer ${NUCLEO_TOKEN}` }
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('[MotorIniciativas] Error listando iniciativas D1:', e.message);
+      return [];
+    }
+  }
+
+  async crearIniciativaD1(init) {
+    try {
+      const res = await fetch(`${NUCLEO_URL}/iniciativas`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${NUCLEO_TOKEN}`,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify(init)
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('[MotorIniciativas] Error creando iniciativa en D1:', e.message);
+      return null;
+    }
+  }
+
+  async crearTareaAsana(init, d1Id) {
+    try {
+      const notes = `Iniciativa ID: ${d1Id}\n` +
+        `Ámbito: ${init.ambito}\n` +
+        `Riesgo: ${init.risk_tier}\n` +
+        `Origen: Ideas de herramientas (I+D PC & Ecosistema)\n\n` +
+        `Motivación:\n${init.motivacion}\n\n` +
+        `Hipótesis:\n${init.hipotesis}\n\n` +
+        `Puntuación:\n` +
+        `Impacto: ${init.scores_json.impacto}/5 | Alineación: ${init.scores_json.alineacion}/5 | Esfuerzo: ${init.scores_json.esfuerzo}/5\n` +
+        `Score Total: ${init.scores_json.total}/10`;
+
+      const res = await fetch('https://app.asana.com/api/1.0/tasks', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${ASANA_TOKEN}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ data: { task: taskGid } })
+        body: JSON.stringify({
+          data: {
+            name: init.titulo,
+            projects: [ASANA_PROJECT],
+            memberships: [{ project: ASANA_PROJECT, section: ASANA_SECCIONES.CHISPAS }],
+            notes
+          }
+        })
       });
       const data = await res.json();
-
-      if (comentario) {
-        await fetch(`https://app.asana.com/api/1.0/tasks/${taskGid}/stories`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${ASANA_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ data: { text: comentario } })
-        });
-      }
-
-      return data;
+      return data?.data?.gid || null;
     } catch (e) {
-      console.error(`[MotorIniciativas] Error moviendo tarea Asana ${taskGid}:`, e.message);
+      console.error('[MotorIniciativas] Error creando tarea en Asana:', e.message);
       return null;
-    }
-  }
-
-  async actualizarIniciativaD1(id, updates) {
-    try {
-      const res = await fetch(`${NUCLEO_URL}/iniciativas/${id}`, {
-        method: 'PATCH',
-        headers: {
-          authorization: `Bearer ${NUCLEO_TOKEN}`,
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify(updates)
-      });
-      return await res.json();
-    } catch (e) {
-      console.error(`[MotorIniciativas] Error actualizando iniciativa D1 ${id}:`, e.message);
-      return null;
-    }
-  }
-
-  async consultarGrafoVeronica() {
-    try {
-      const [nodosRes, relsRes, rechazosRes, iniciativasRes] = await Promise.all([
-        fetch(`${NUCLEO_URL}/nodos`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } }),
-        fetch(`${NUCLEO_URL}/relaciones`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } }),
-        fetch(`${NUCLEO_URL}/iniciativas/rechazos/todos`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } }),
-        fetch(`${NUCLEO_URL}/iniciativas`, { headers: { authorization: `Bearer ${NUCLEO_TOKEN}` } })
-      ]);
-
-      return {
-        nodos: (await nodosRes.json()) || [],
-        relaciones: (await relsRes.json()) || [],
-        rechazos: (await rechazosRes.json()) || [],
-        iniciativas: (await iniciativasRes.json()) || []
-      };
-    } catch (e) {
-      console.error('[MotorIniciativas] Error consultando grafo Verónica:', e.message);
-      return { nodos: [], relaciones: [], rechazos: [], iniciativas: [] };
     }
   }
 
@@ -95,29 +168,44 @@ export class MotorIniciativas {
     this.totalCiclos++;
 
     console.log(`\n======================================================`);
-    console.log(`🔄 [CICLO DE INICIATIVAS BASADO EN GRAFO D1] #${this.totalCiclos}`);
+    console.log(`💡 [CICLO CREADOR DE IDEAS EN ASANA] #${this.totalCiclos}`);
     console.log(`Origen: ${origen} | Timestamp: ${this.ultimaEjecucion}`);
     console.log(`======================================================\n`);
 
-    const { nodos, relaciones, rechazos, iniciativas } = await this.consultarGrafoVeronica();
+    const existentesD1 = await this.listarIniciativasD1();
+    const titulosExistentes = new Set(existentesD1.map(i => i.titulo.toLowerCase().trim()));
 
-    console.log(`[MotorIniciativas] Estado del núcleo D1:`);
-    console.log(` - Nodos activos: ${nodos.length}`);
-    console.log(` - Relaciones de dependencia: ${relaciones.length}`);
-    console.log(` - Patrones de rechazo guardados: ${rechazos.length}`);
-    console.log(` - Iniciativas registradas: ${iniciativas.length}`);
+    // Filtrar candidatos del banco que aún no existan
+    const candidatos = BANCO_IDEAS_HERRAMIENTAS.filter(
+      item => !titulosExistentes.has(item.titulo.toLowerCase().trim())
+    );
+
+    console.log(`[MotorIniciativas] Candidatos disponibles en banco: ${candidatos.length}`);
+
+    // Tomar 3 ideas por ciclo
+    const seleccionadas = candidatos.slice(0, 3);
+    const creadas = [];
+
+    for (const init of seleccionadas) {
+      // 1. Guardar en D1 con estado 'chispa'
+      const d1Result = await this.crearIniciativaD1(init);
+      const d1Id = d1Result?.id || `init_temp_${Date.now()}`;
+
+      // 2. Guardar en Asana en 'Chispas & Nuevas Ideas'
+      const asanaGid = await this.crearTareaAsana(init, d1Id);
+
+      console.log(`✓ Publicada [${d1Id}] en Asana GID: ${asanaGid} => "${init.titulo}"`);
+      creadas.push({ d1Id, asanaGid, titulo: init.titulo });
+    }
 
     return {
       ok: true,
       ciclo: this.totalCiclos,
       origen,
       timestamp: this.ultimaEjecucion,
-      metricas_grafo: {
-        total_nodos: nodos.length,
-        total_relaciones: relaciones.length,
-        total_rechazos: rechazos.length,
-        total_iniciativas: iniciativas.length
-      }
+      ideas_publicadas: creadas.length,
+      detalle: creadas,
+      restantes_en_banco: candidatos.length - creadas.length
     };
   }
 }
