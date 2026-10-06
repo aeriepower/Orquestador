@@ -1,7 +1,8 @@
 // Motor Autónomo de Ideas & Herramientas
 // 1. Cada 2 horas selecciona y publica 3 ideas en Asana ('💡 Chispas & Nuevas Ideas')
-// 2. Extrae y rota ideas desde el Laboratorio de Herramientas (modelos locales, hardware ESP32/PC, marketing, audio, MCP)
-// 3. Registra en D1 con estado 'chispa' y puntuación de impacto/esfuerzo sin autoimplementación
+// 2. Extrae ideas del banco de I+D (hardware, voz, modelos locales, MCP, Candyla Growth)
+// 3. Comprobación DOBLE de deduplicación: consulta activamente Asana Y Verónica D1 antes de publicar
+// 4. Utiliza creado_por: 'antigravity' (valor válido del enum D1)
 
 const ASANA_TOKEN = '2/9318767707442/1218819902154567:d933bd0d24bab0903b8a75d8de7b6357';
 const ASANA_PROJECT = '1219144624749842'; // 🤖 Autonomía & Iniciativas (Antigravity & Jarvis)
@@ -25,7 +26,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Latencia de respuesta por voz inferior a 250ms directamente en la LAN, con coste de hardware <15€ por habitación.',
     risk_tier: 'L1',
     scores_json: { impacto: 4.5, alineacion: 5, urgencia: 3, confianza: 4, riesgo: 1, esfuerzo: 2.5, total: 6.8 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   },
   {
     titulo: '⚡ [Modelos Locales] Banco de Pruebas Kimi-k3-in-c (8GB RAM) vs Qwen 2.5 Coder',
@@ -34,7 +35,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Tener un motor de razonamiento de respaldo funcional en el PC incluso cuando no haya conexión o queramos procesar datos confidenciales a coste cero.',
     risk_tier: 'L1',
     scores_json: { impacto: 4, alineacion: 4.5, urgencia: 3, confianza: 4.5, riesgo: 1, esfuerzo: 2, total: 6.2 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   },
   {
     titulo: '🦉 [Agentes Autónomos] Integración Hermes 3 / Nous Research con OpenCoder',
@@ -43,7 +44,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Reducir fallos de parseo en herramientas locales y dotar al agente de mejor capacidad de planificación agéntica local.',
     risk_tier: 'L1',
     scores_json: { impacto: 4.5, alineacion: 4.5, urgencia: 3.5, confianza: 4, riesgo: 1, esfuerzo: 2, total: 6.5 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   },
   {
     titulo: '📱 [Control Dispositivos] Servidor Mobile-MCP (mobile-next) para control telefónico',
@@ -52,7 +53,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Unificar la interacción móvil con el ecosistema de Jarvis y Claude a través del protocolo estándar MCP.',
     risk_tier: 'L1',
     scores_json: { impacto: 4, alineacion: 4.5, urgencia: 3, confianza: 3.5, riesgo: 1, esfuerzo: 2.5, total: 5.8 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   },
   {
     titulo: '🍬 [Candyla Growth] Generación de Creatividades de Producto vía Google Pomelli',
@@ -61,7 +62,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Acelerar la creación de campañas y fichas de producto atractivas sin requerir horas de diseño manual para cada dulce nuevo.',
     risk_tier: 'L1',
     scores_json: { impacto: 4.5, alineacion: 5, urgencia: 3.5, confianza: 4, riesgo: 1, esfuerzo: 1.5, total: 6.9 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   },
   {
     titulo: '🛡️ [Seguridad & Auditoría] NVIDIA Nemotron Ultra para validación y Red-Teaming',
@@ -70,7 +71,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Proteger los endpoints públicos y agentes de WhatsApp/n8n contra inyecciones de prompt o fugas de datos.',
     risk_tier: 'L1',
     scores_json: { impacto: 4, alineacion: 4, urgencia: 2.5, confianza: 4, riesgo: 1, esfuerzo: 2, total: 5.7 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   },
   {
     titulo: '🗣️ [Voz Hiper-Realista] Pipeline Híbrido ElevenLabs para respuestas clave de Jarvis',
@@ -79,7 +80,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Mejorar drásticamente la experiencia de usuario y presencia de Jarvis sin disparar el consumo de créditos de audio.',
     risk_tier: 'L1',
     scores_json: { impacto: 4, alineacion: 4.5, urgencia: 3, confianza: 4.5, riesgo: 1, esfuerzo: 1.5, total: 6.3 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   },
   {
     titulo: '🧩 [Micro-Apps] Prototipado Rápido de Flujos Asistidos con Google Opal',
@@ -88,7 +89,7 @@ export const BANCO_IDEAS_HERRAMIENTAS = [
     hipotesis: 'Reducir el ciclo de validación de herramientas internas a minutos para flujos de prueba con David.',
     risk_tier: 'L1',
     scores_json: { impacto: 3.5, alineacion: 4, urgencia: 2, confianza: 4, riesgo: 1, esfuerzo: 1.5, total: 5.2 },
-    creado_por: 'antigravity_scheduler'
+    creado_por: 'antigravity'
   }
 ];
 
@@ -107,6 +108,19 @@ export class MotorIniciativas {
       return await res.json();
     } catch (e) {
       console.error('[MotorIniciativas] Error listando iniciativas D1:', e.message);
+      return [];
+    }
+  }
+
+  async listarTareasAsana() {
+    try {
+      const res = await fetch(`https://app.asana.com/api/1.0/projects/${ASANA_PROJECT}/tasks?opt_fields=name`, {
+        headers: { Authorization: `Bearer ${ASANA_TOKEN}` }
+      });
+      const data = await res.json();
+      return (data?.data || []).map(t => (t.name || '').toLowerCase().trim());
+    } catch (e) {
+      console.error('[MotorIniciativas] Error listando tareas de Asana:', e.message);
       return [];
     }
   }
@@ -172,24 +186,35 @@ export class MotorIniciativas {
     console.log(`Origen: ${origen} | Timestamp: ${this.ultimaEjecucion}`);
     console.log(`======================================================\n`);
 
-    const existentesD1 = await this.listarIniciativasD1();
-    const titulosExistentes = new Set(existentesD1.map(i => i.titulo.toLowerCase().trim()));
+    // 1. Consultar títulos existentes en D1 Y en Asana directamente
+    const [existentesD1, existentesAsana] = await Promise.all([
+      this.listarIniciativasD1(),
+      this.listarTareasAsana()
+    ]);
 
-    // Filtrar candidatos del banco que aún no existan
-    const candidatos = BANCO_IDEAS_HERRAMIENTAS.filter(
-      item => !titulosExistentes.has(item.titulo.toLowerCase().trim())
-    );
+    const titulosD1 = new Set(existentesD1.map(i => (i.titulo || '').toLowerCase().trim()));
+    const titulosAsana = new Set(existentesAsana);
 
-    console.log(`[MotorIniciativas] Candidatos disponibles en banco: ${candidatos.length}`);
+    // Normalizador de títulos para comparación segura
+    const yaExiste = (titulo) => {
+      const norm = titulo.toLowerCase().trim();
+      return titulosD1.has(norm) || titulosAsana.has(norm);
+    };
 
-    // Tomar 3 ideas por ciclo
+    // 2. Filtrar candidatos del banco que NO existan ni en D1 ni en Asana
+    const candidatos = BANCO_IDEAS_HERRAMIENTAS.filter(item => !yaExiste(item.titulo));
+
+    console.log(`[MotorIniciativas] En Asana: ${existentesAsana.length} tareas. En D1: ${existentesD1.length} iniciativas.`);
+    console.log(`[MotorIniciativas] Candidatos nuevos disponibles en banco: ${candidatos.length}`);
+
+    // Tomar hasta 3 ideas por ciclo
     const seleccionadas = candidatos.slice(0, 3);
     const creadas = [];
 
     for (const init of seleccionadas) {
-      // 1. Guardar en D1 con estado 'chispa'
+      // 1. Guardar en D1 con estado 'chispa' (creado_por: 'antigravity')
       const d1Result = await this.crearIniciativaD1(init);
-      const d1Id = d1Result?.id || `init_temp_${Date.now()}`;
+      const d1Id = d1Result?.id || `init_${Date.now()}`;
 
       // 2. Guardar en Asana en 'Chispas & Nuevas Ideas'
       const asanaGid = await this.crearTareaAsana(init, d1Id);
