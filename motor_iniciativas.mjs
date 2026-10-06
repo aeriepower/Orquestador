@@ -4,6 +4,8 @@
 // 3. Comprobación DOBLE de deduplicación: consulta activamente Asana Y Verónica D1 antes de publicar
 // 4. Utiliza creado_por: 'antigravity' (valor válido del enum D1)
 
+import { InvestigadorWeb } from './investigador_web.mjs';
+
 const ASANA_TOKEN = '2/9318767707442/1218819902154567:d933bd0d24bab0903b8a75d8de7b6357';
 const ASANA_PROJECT = '1219144624749842'; // 🤖 Autonomía & Iniciativas (Antigravity & Jarvis)
 
@@ -98,6 +100,7 @@ export class MotorIniciativas {
     this.ultimaEjecucion = null;
     this.siguienteEjecucion = null;
     this.totalCiclos = 0;
+    this.investigador = new InvestigadorWeb();
   }
 
   async listarIniciativasD1() {
@@ -147,7 +150,7 @@ export class MotorIniciativas {
       const notes = `Iniciativa ID: ${d1Id}\n` +
         `Ámbito: ${init.ambito}\n` +
         `Riesgo: ${init.risk_tier}\n` +
-        `Origen: Ideas de herramientas (I+D PC & Ecosistema)\n\n` +
+        `Origen: ${init.origen_fuente || 'Descubrimiento Web & GitHub / MCP / HuggingFace'}\n\n` +
         `Motivación:\n${init.motivacion}\n\n` +
         `Hipótesis:\n${init.hipotesis}\n\n` +
         `Puntuación:\n` +
@@ -201,11 +204,15 @@ export class MotorIniciativas {
       return titulosD1.has(norm) || titulosAsana.has(norm);
     };
 
-    // 2. Filtrar candidatos del banco que NO existan ni en D1 ni en Asana
-    const candidatos = BANCO_IDEAS_HERRAMIENTAS.filter(item => !yaExiste(item.titulo));
+    // 2. Obtener descubrimientos frescos de internet + banco temático de chat
+    const ideasWeb = await this.investigador.descubrirNuevasIdeas();
+    const bancoCombinado = [...ideasWeb, ...BANCO_IDEAS_HERRAMIENTAS];
+
+    // 3. Filtrar candidatos que NO existan ni en D1 ni en Asana
+    const candidatos = bancoCombinado.filter(item => !yaExiste(item.titulo));
 
     console.log(`[MotorIniciativas] En Asana: ${existentesAsana.length} tareas. En D1: ${existentesD1.length} iniciativas.`);
-    console.log(`[MotorIniciativas] Candidatos nuevos disponibles en banco: ${candidatos.length}`);
+    console.log(`[MotorIniciativas] Candidatos nuevos disponibles (Web + Banco): ${candidatos.length}`);
 
     // Tomar hasta 3 ideas por ciclo
     const seleccionadas = candidatos.slice(0, 3);
