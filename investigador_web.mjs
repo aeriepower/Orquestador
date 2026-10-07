@@ -1,6 +1,5 @@
 // Investigador Autónomo de Ecosistema & GitHub / MCP / HuggingFace
-// Rastrea la web (GitHub API, awesome-mcp-servers, HuggingFace) para descubrir
-// herramientas reales, servidores MCP y modelos que potencien a Antigravity, Jarvis y Candyla.
+// Rastrea la web dinámicamente para descubrir herramientas reales, servidores MCP y modelos.
 
 export class InvestigadorWeb {
   constructor() {
@@ -19,16 +18,16 @@ export class InvestigadorWeb {
         nombre: m[1].trim(),
         url: m[2].trim(),
         descripcion: m[3].trim()
-      }));
+      })).filter(m => m.descripcion.length > 25 && !m.descripcion.includes('Deprecated'));
     } catch (e) {
       console.warn('[InvestigadorWeb] Error en Awesome MCP:', e.message);
       return [];
     }
   }
 
-  async buscarGitHubMcpTrending() {
+  async buscarGitHubTrending() {
     try {
-      const url = 'https://api.github.com/search/repositories?q=topic:model-context-protocol+sort:stars&per_page=15';
+      const url = 'https://api.github.com/search/repositories?q=topic:model-context-protocol+sort:stars&per_page=20';
       const res = await fetch(url, { headers: { 'User-Agent': this.userAgent } });
       if (!res.ok) return [];
       const data = await res.json();
@@ -40,14 +39,14 @@ export class InvestigadorWeb {
         descripcion: i.description || ''
       }));
     } catch (e) {
-      console.warn('[InvestigadorWeb] Error en GitHub MCP Search:', e.message);
+      console.warn('[InvestigadorWeb] Error en GitHub Trending:', e.message);
       return [];
     }
   }
 
   async buscarHuggingFaceModelos() {
     try {
-      const url = 'https://huggingface.co/api/models?sort=downloads&direction=-1&limit=10&filter=text-generation';
+      const url = 'https://huggingface.co/api/models?sort=trendingScore&direction=-1&limit=15&filter=text-generation';
       const res = await fetch(url);
       if (!res.ok) return [];
       const data = await res.json();
@@ -62,81 +61,96 @@ export class InvestigadorWeb {
     }
   }
 
+  clasificarAmbito(texto) {
+    const t = texto.toLowerCase();
+    if (t.includes('candyla') || t.includes('shop') || t.includes('ecommerce') || t.includes('marketing') || t.includes('seo')) return 'candyla';
+    if (t.includes('jarvis') || t.includes('home') || t.includes('esp32') || t.includes('voice') || t.includes('audio') || t.includes('docker') || t.includes('raspberry') || t.includes('orange pi')) return 'jarvis';
+    return 'antigravity';
+  }
+
+  estimarScores(nombre, descripcion) {
+    let impacto = 4.0;
+    let alineacion = 4.5;
+    let urgencia = 3.0;
+    let confianza = 4.0;
+    let esfuerzo = 2.0;
+
+    const t = (nombre + ' ' + descripcion).toLowerCase();
+    if (t.includes('agent') || t.includes('memory') || t.includes('code') || t.includes('automation')) {
+      impacto = 4.5;
+      alineacion = 5.0;
+    }
+    if (t.includes('database') || t.includes('sql') || t.includes('sqlite') || t.includes('browser')) {
+      urgencia = 3.5;
+      confianza = 4.5;
+    }
+
+    const total = Number(((impacto * 0.35 + alineacion * 0.35 + urgencia * 0.15 + confianza * 0.15) * 1.5).toFixed(1));
+    return { impacto, alineacion, urgencia, confianza, riesgo: 1, esfuerzo, total };
+  }
+
   /**
-   * Genera propuestas de iniciativa a partir de descubrimientos de internet
+   * Genera propuestas de iniciativa DINÁMICAS e ILIMITADAS a partir de descubrimientos de internet
    */
   async descubrirNuevasIdeas() {
-    console.log('[InvestigadorWeb] 🌐 Explorando internet (GitHub, MCP, HuggingFace)...');
+    console.log('[InvestigadorWeb] 🌐 Explorando internet dinámicamente (Awesome MCP, GitHub, HuggingFace)...');
     const [awesomeMcp, githubRepos, hfModels] = await Promise.all([
       this.buscarAwesomeMcp(),
-      this.buscarGitHubMcpTrending(),
+      this.buscarGitHubTrending(),
       this.buscarHuggingFaceModelos()
     ]);
 
     const ideas = [];
 
-    // 1. Explorar MCP Servers de alta utilidad para Antigravity/Jarvis
-    const servidoresInteres = [
-      {
-        keyword: 'playwright',
-        titulo: '🕵️ [Herramienta Antigravity] Servidor Playwright MCP para Navegación Stealth & Web Scraping',
-        ambito: 'antigravity',
-        motivacion: 'Integrar un conector MCP de Playwright/Browserbase en Antigravity para que pueda navegar páginas dinámicas, extraer documentación protegida por Cloudflare y verificar despliegues visuales sin depender de emulaciones lentas.',
-        hipotesis: 'Permitir a Antigravity auto-verificar el 100% de los deploys de la tienda Candyla y flujos n8n de forma visual y desatendida.',
-        tier: 'L1',
-        scores: { impacto: 4.5, alineacion: 5, urgencia: 4, confianza: 4.5, riesgo: 1, esfuerzo: 2, total: 7.2 }
-      },
-      {
-        keyword: 'codebase-memory',
-        titulo: '🧠 [Herramienta Antigravity] Conector Codebase Memory MCP para Grafos de Código en Submilisegundos',
-        ambito: 'antigravity',
-        motivacion: 'Evaluar servidores MCP de indexación estática (como codebase-memory-mcp) que parsean árboles sintácticos en C++/Rust y reducen el consumo de tokens de búsqueda en un 90% frente a lecturas de archivos completas.',
-        hipotesis: 'Ahorro masivo del límite de contexto en consultas profundas de arquitectura en los repositorios de Candyla y Jarvis.',
-        tier: 'L1',
-        scores: { impacto: 4.5, alineacion: 4.5, urgencia: 3.5, confianza: 4, riesgo: 1, esfuerzo: 1.5, total: 6.8 }
-      },
-      {
-        keyword: 'docker',
-        titulo: '🐳 [Infraestructura Jarvis] Servidor Docker MCP para Gestión Aislada de Contenedores en Orange Pi / PC',
-        ambito: 'jarvis',
-        motivacion: 'Incorporar herramientas MCP de gestión de contenedores Docker para que Jarvis pueda levantar microservicios, reiniciar bases de datos o crear entornos sandbox sin necesidad de comandos SSH manuales de David.',
-        hipotesis: 'Mayor resiliencia operativa y autonomía para auto-sanar servicios caídos en el servidor doméstico.',
-        tier: 'L1',
-        scores: { impacto: 4, alineacion: 4.5, urgencia: 3, confianza: 4, riesgo: 1.5, esfuerzo: 2, total: 6.1 }
-      },
-      {
-        keyword: 'fastmcp',
-        titulo: '⚡ [Herramientas Propias] Framework FastMCP para creación express de herramientas internas',
-        ambito: 'antigravity',
-        motivacion: 'Adoptar FastMCP (o SDK oficial de TypeScript) para que Antigravity y Claude puedan exponer scripts y utilidades de Candyla como herramientas MCP reutilizables al instante en lugar de comandos ad-hoc.',
-        hipotesis: 'Estandarizar la comunicación modular entre Antigravity, Claude Code y la Orange Pi bajo un único protocolo limpio.',
-        tier: 'L1',
-        scores: { impacto: 4, alineacion: 4.5, urgencia: 3.5, confianza: 4.5, riesgo: 1, esfuerzo: 1.5, total: 6.5 }
-      },
-      {
-        keyword: 'sqlite',
-        titulo: '📊 [Memoria Híbrida] Motor Local SQLite FTS5 + Embeddings para búsqueda semántica ultrarrápida',
-        ambito: 'antigravity',
-        motivacion: 'Investigar proyectos descubiertos en GitHub (como a-memory / nanobot) que implementan SQLite híbrido con Full-Text Search (FTS5) en local para almacenar cachés de indexación antes de consultar Cloudflare D1.',
-        hipotesis: 'Cero latencia de red y preservación estricta de las cuotas de lectura de Cloudflare.',
-        tier: 'L1',
-        scores: { impacto: 4, alineacion: 4, urgencia: 3, confianza: 4, riesgo: 1, esfuerzo: 2, total: 5.9 }
-      }
-    ];
+    // 1. Convertir servidores de Awesome MCP en propuestas estructuradas
+    for (const s of awesomeMcp) {
+      const ambito = this.clasificarAmbito(s.nombre + ' ' + s.descripcion);
+      const scores = this.estimarScores(s.nombre, s.descripcion);
 
-    for (const item of servidoresInteres) {
       ideas.push({
-        titulo: item.titulo,
-        ambito: item.ambito,
-        motivacion: item.motivacion,
-        hipotesis: item.hipotesis,
-        risk_tier: item.tier,
-        scores_json: item.scores,
+        titulo: `🌐 [Herramienta MCP] ${s.nombre}: ${s.descripcion.substring(0, 70)}...`,
+        ambito,
+        motivacion: `Descubierto en el catálogo abierto de Awesome MCP Servers (${s.url}): ${s.descripcion}. Esta herramienta puede expandir las capacidades operativas del ecosistema sin programarla desde cero.`,
+        hipotesis: `Integrar ${s.nombre} como servidor MCP en el ecosistema para dotar a los agentes de herramientas especializadas y estandarizadas.`,
+        risk_tier: 'L1',
+        scores_json: scores,
+        origen_fuente: `Awesome MCP Servers (${s.url})`,
         creado_por: 'antigravity'
       });
     }
 
-    console.log(`[InvestigadorWeb] Generadas ${ideas.length} ideas basadas en hallazgos activos de internet.`);
+    // 2. Convertir repositorios de GitHub Trending en propuestas
+    for (const r of githubRepos) {
+      const ambito = this.clasificarAmbito(r.nombre + ' ' + r.descripcion);
+      const scores = this.estimarScores(r.nombre, r.descripcion);
+
+      ideas.push({
+        titulo: `⭐ [GitHub Trending] ${r.nombre} (${r.stars}★): ${r.descripcion.substring(0, 65)}...`,
+        ambito,
+        motivacion: `Proyecto en tendencia en GitHub (${r.repo}, ${r.stars} estrellas): ${r.descripcion}. Enlace: ${r.url}`,
+        hipotesis: `Evaluar ${r.nombre} como componente modular o dependencia útil para la arquitectura multi-agente.`,
+        risk_tier: 'L1',
+        scores_json: scores,
+        origen_fuente: `GitHub Trending (${r.url})`,
+        creado_por: 'antigravity'
+      });
+    }
+
+    // 3. Convertir modelos trending de HuggingFace en propuestas
+    for (const m of hfModels.slice(0, 5)) {
+      ideas.push({
+        titulo: `🤗 [Modelo Local HuggingFace] ${m.id} (${m.likes} likes, ${m.downloads} descargas)`,
+        ambito: 'antigravity',
+        motivacion: `Modelo de generación de texto destacado en HuggingFace (${m.id}). Alta adopción de la comunidad con ${m.downloads} descargas.`,
+        hipotesis: `Probar la viabilidad de inferencia local en CPU/GPU para tareas especializadas a coste cero.`,
+        risk_tier: 'L1',
+        scores_json: { impacto: 4, alineacion: 4.5, urgencia: 2.5, confianza: 4, riesgo: 1, esfuerzo: 2, total: 6.0 },
+        origen_fuente: `HuggingFace Hub (https://huggingface.co/${m.id})`,
+        creado_por: 'antigravity'
+      });
+    }
+
+    console.log(`[InvestigadorWeb] Descubiertas y formateadas ${ideas.length} ideas dinámicas.`);
     return ideas;
   }
 }
